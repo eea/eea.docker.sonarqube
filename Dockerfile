@@ -1,6 +1,6 @@
 #merge maxim cu alpine 3.13
 #https://github.com/SonarSource/docker-sonarqube/issues/493
-FROM alpine:3.13
+FROM alpine:3.13.9
 
 ENV LANG='en_US.UTF-8' \
     LANGUAGE='en_US:en' \
