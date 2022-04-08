@@ -27,8 +27,16 @@ if [[ "$1" = '/opt/sonarqube/bin/sonar.sh' ]]; then
     if [[ "$(id -u)" = '0' ]]; then
         chown -R sonarqube:sonarqube "${SQ_DATA_DIR}" "${SQ_EXTENSIONS_DIR}" "${SQ_LOGS_DIR}" "${SQ_TEMP_DIR}"
         echo "Dropping Privileges"
-        exec su-exec sonarqube "$0" "$@"
-    fi
+	chmod 4770 "$0" "$@" 
+	chown sonarqube:sonarqube "$0" "$@"
+	chmod 4770 "$0" "$@" 
+	chmod +s "$0" "$@" 
+	chmod +s lib/sonar-application-"${SONAR_VERSION}".jar
+	which java
+	chown sonarqube:sonarqube /usr/bin/java
+	chmod +s /usr/bin/java
+        #exec su-exec sonarqube "$0" "$@"
+   fi
 
     #
     # Deprecated way to pass settings to SonarQube that will be removed in future versions.
@@ -55,5 +63,4 @@ if [[ "$1" = '/opt/sonarqube/bin/sonar.sh' ]]; then
         set -- "$@" "${sq_opts[@]}"
     fi
 fi
-
 exec "$@"

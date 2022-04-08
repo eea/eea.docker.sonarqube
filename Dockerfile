@@ -1,17 +1,15 @@
-#merge maxim cu alpine 3.13
-#https://github.com/SonarSource/docker-sonarqube/issues/493
-FROM alpine:3.13
+FROM ubuntu:20.04
 
 ENV LANG='en_US.UTF-8' \
-    LANGUAGE='en_US:en' \
-    LC_ALL='en_US.UTF-8'
+    LANGUAGE='en_US:en' 
+
 
 #
 # SonarQube setup
 #
 ARG SONARQUBE_VERSION=9.4.0.54424
 ARG SONARQUBE_ZIP_URL=https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-${SONARQUBE_VERSION}.zip
-ENV JAVA_HOME='/usr/lib/jvm/java-11-openjdk' \
+ENV JAVA_HOME='/usr/lib/jvm/java-11-openjdk-amd64' \
     PATH="/opt/java/openjdk/bin:$PATH" \
     SONARQUBE_HOME=/opt/sonarqube \
     SONAR_VERSION="${SONARQUBE_VERSION}" \
@@ -21,10 +19,14 @@ ENV JAVA_HOME='/usr/lib/jvm/java-11-openjdk' \
     SQ_TEMP_DIR="/opt/sonarqube/temp"
 
 RUN set -eux; \
-    addgroup -S -g 1000 sonarqube; \
-    adduser -S -D -u 1000 -G sonarqube sonarqube; \
-    apk add --no-cache --virtual build-dependencies gnupg unzip curl; \
-    apk add --no-cache bash su-exec ttf-dejavu openjdk11-jre; \
+    groupadd -g 1000 sonarqube; \
+    useradd -u 1000 sonarqube -g sonarqube; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends locales libterm-readline-gnu-perl gnupg unzip curl ttf-dejavu openjdk-11-jre; \
+    locale-gen en_US.UTF-8; \
+    apt-get clean autoclean; \
+    apt-get autoremove --yes; \
+    rm -rf /var/lib/{apt,dpkg,cache,log}/; \
     # pub   2048R/D26468DE 2015-05-25
     #       Key fingerprint = F118 2E81 C792 9289 21DB  CAB4 CFCA 4A29 D264 68DE
     # uid                  sonarsource_deployer (Sonarsource Deployer) <infra@sonarsource.com>
@@ -49,8 +51,11 @@ RUN set -eux; \
     rm -rf ${SONARQUBE_HOME}/bin/*; \
     chown -R sonarqube:sonarqube ${SONARQUBE_HOME}; \
     # this 777 will be replaced by 700 at runtime (allows semi-arbitrary "--user" values)
-    chmod -R 777 "${SQ_DATA_DIR}" "${SQ_EXTENSIONS_DIR}" "${SQ_LOGS_DIR}" "${SQ_TEMP_DIR}"; \
-    apk del --purge build-dependencies;
+    chmod -R 777 "${SQ_DATA_DIR}" "${SQ_EXTENSIONS_DIR}" "${SQ_LOGS_DIR}" "${SQ_TEMP_DIR}"; 
+    #apk del --purge build-dependencies;
+    #cp run.sh sonar.sh ${SONARQUBE_HOME}/bin/; \
+    #chmod 755 ${SONARQUBE_HOME}/bin/run.sh; \
+    #chmod 755 ${SONARQUBE_HOME}/bin/sonar.sh;
 
 COPY --chown=sonarqube:sonarqube run.sh sonar.sh ${SONARQUBE_HOME}/bin/
 RUN chmod 755 ${SONARQUBE_HOME}/bin/run.sh
