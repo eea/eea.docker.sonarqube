@@ -3,7 +3,6 @@ FROM ubuntu:20.04
 ENV LANG='en_US.UTF-8' \
     LANGUAGE='en_US:en' 
 
-
 #
 # SonarQube setup
 #
@@ -52,10 +51,6 @@ RUN set -eux; \
     chown -R sonarqube:sonarqube ${SONARQUBE_HOME}; \
     # this 777 will be replaced by 700 at runtime (allows semi-arbitrary "--user" values)
     chmod -R 777 "${SQ_DATA_DIR}" "${SQ_EXTENSIONS_DIR}" "${SQ_LOGS_DIR}" "${SQ_TEMP_DIR}"; 
-    #apk del --purge build-dependencies;
-    #cp run.sh sonar.sh ${SONARQUBE_HOME}/bin/; \
-    #chmod 755 ${SONARQUBE_HOME}/bin/run.sh; \
-    #chmod 755 ${SONARQUBE_HOME}/bin/sonar.sh;
 
 COPY --chown=sonarqube:sonarqube run.sh sonar.sh ${SONARQUBE_HOME}/bin/
 RUN chmod 755 ${SONARQUBE_HOME}/bin/run.sh
