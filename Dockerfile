@@ -1,15 +1,15 @@
-FROM ubuntu:20.04
+FROM eclipse-temurin:17-jre-focal
 
 ENV LANG='en_US.UTF-8' \
-    LANGUAGE='en_US:en' 
+    LANGUAGE='en_US:en' \
+    LC_ALL='en_US.UTF-8'
 
 #
 # SonarQube setup
 #
-ARG SONARQUBE_VERSION=9.5.0.56709
+ARG SONARQUBE_VERSION=9.9.0.65466
 ARG SONARQUBE_ZIP_URL=https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-${SONARQUBE_VERSION}.zip
-ENV JAVA_HOME='/usr/lib/jvm/java-11-openjdk-amd64' \
-    PATH="/opt/java/openjdk/bin:$PATH" \
+ENV JAVA_HOME='/opt/java/openjdk' \
     SONARQUBE_HOME=/opt/sonarqube \
     SONAR_VERSION="${SONARQUBE_VERSION}" \
     SQ_DATA_DIR="/opt/sonarqube/data" \
@@ -18,25 +18,18 @@ ENV JAVA_HOME='/usr/lib/jvm/java-11-openjdk-amd64' \
     SQ_TEMP_DIR="/opt/sonarqube/temp"
 
 RUN set -eux; \
-    groupadd -g 1000 sonarqube; \
-    useradd -u 1000 sonarqube -g sonarqube; \
+    groupadd --system --gid 1000 sonarqube; \
+    useradd --system --uid 1000 --gid sonarqube sonarqube; \
     apt-get update; \
-    apt-get install -y --no-install-recommends locales libterm-readline-gnu-perl gnupg unzip curl ttf-dejavu openjdk-11-jre; \
-    locale-gen en_US.UTF-8; \
-    apt-get clean autoclean; \
-    apt-get autoremove --yes; \
-    rm -rf /var/lib/{apt,dpkg,cache,log}/; \
+    apt-get install -y gnupg unzip curl bash fonts-dejavu; \
+    echo "networkaddress.cache.ttl=5" >> "${JAVA_HOME}/conf/security/java.security"; \
+    sed --in-place --expression="s?securerandom.source=file:/dev/random?securerandom.source=file:/dev/urandom?g" "${JAVA_HOME}/conf/security/java.security"; \
     # pub   2048R/D26468DE 2015-05-25
     #       Key fingerprint = F118 2E81 C792 9289 21DB  CAB4 CFCA 4A29 D264 68DE
     # uid                  sonarsource_deployer (Sonarsource Deployer) <infra@sonarsource.com>
     # sub   2048R/06855C1D 2015-05-25
-    echo "networkaddress.cache.ttl=5" >> "${JAVA_HOME}/conf/security/java.security"; \
-    sed --in-place --expression="s?securerandom.source=file:/dev/random?securerandom.source=file:/dev/urandom?g" "${JAVA_HOME}/conf/security/java.security"; \
-    for server in $(shuf -e ha.pool.sks-keyservers.net \
-                            hkp://p80.pool.sks-keyservers.net:80 \
-                            keyserver.ubuntu.com \
-                            hkp://keyserver.ubuntu.com:80 \
-                            pgp.mit.edu) ; do \
+    for server in $(shuf -e hkps://keys.openpgp.org \
+                            hkps://keyserver.ubuntu.com) ; do \
         gpg --batch --keyserver "${server}" --recv-keys 679F1EE92B19609DE816FDE81DB198F93525EC1A && break || : ; \
     done; \
     mkdir --parents /opt; \
@@ -48,18 +41,18 @@ RUN set -eux; \
     mv "sonarqube-${SONARQUBE_VERSION}" sonarqube; \
     rm sonarqube.zip*; \
     rm -rf ${SONARQUBE_HOME}/bin/*; \
-    chown -R sonarqube:sonarqube ${SONARQUBE_HOME}; \
-    # this 777 will be replaced by 700 at runtime (allows semi-arbitrary "--user" values)
-    chmod -R 777 "${SQ_DATA_DIR}" "${SQ_EXTENSIONS_DIR}" "${SQ_LOGS_DIR}" "${SQ_TEMP_DIR}"; 
+    ln -s "${SONARQUBE_HOME}/lib/sonar-application-${SONARQUBE_VERSION}.jar" "${SONARQUBE_HOME}/lib/sonarqube.jar"; \
+    chmod -R 555 ${SONARQUBE_HOME}; \
+    chmod -R ugo+wrX "${SQ_DATA_DIR}" "${SQ_EXTENSIONS_DIR}" "${SQ_LOGS_DIR}" "${SQ_TEMP_DIR}"; \
+    apt-get remove -y gnupg unzip curl; \
+    rm -rf /var/lib/apt/lists/*;
 
-COPY --chown=sonarqube:sonarqube run.sh sonar.sh ${SONARQUBE_HOME}/bin/
-RUN chmod 755 ${SONARQUBE_HOME}/bin/run.sh
-RUN chmod 755 ${SONARQUBE_HOME}/bin/sonar.sh
+COPY entrypoint.sh ${SONARQUBE_HOME}/docker/
 
 WORKDIR ${SONARQUBE_HOME}
 EXPOSE 9000
 
+USER sonarqube
 STOPSIGNAL SIGINT
 
-ENTRYPOINT ["/opt/sonarqube/bin/run.sh"]
-CMD ["/opt/sonarqube/bin/sonar.sh"]
+ENTRYPOINT ["/opt/sonarqube/docker/entrypoint.sh"]
