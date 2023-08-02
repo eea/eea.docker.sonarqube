@@ -1,3 +1,3 @@
 # eea.docker.sonarqube
 
-Created using https://github.com/SonarSource/docker-sonarqube/blob/ed2071a47632c34d7639b6ad1b393ab2aee1c9a8/9/community/Dockerfile, changing to focal OS
+Created using https://github.com/SonarSource/docker-sonarqube/blob/9b79d014844155923673ca1fbe72ecc0d9ff361c/9/community/Dockerfile, changing to focal OS
