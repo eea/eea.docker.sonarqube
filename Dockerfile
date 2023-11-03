@@ -1,5 +1,4 @@
-FROM eclipse-temurin:17-jre-focal
-
+FROM eclipse-temurin:17-focal
 
 ENV LANG='en_US.UTF-8' \
     LANGUAGE='en_US:en' \
@@ -8,9 +7,10 @@ ENV LANG='en_US.UTF-8' \
 #
 # SonarQube setup
 #
-ARG SONARQUBE_VERSION=9.9.2.77730
+ARG SONARQUBE_VERSION=10.2.0.77647
 ARG SONARQUBE_ZIP_URL=https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-${SONARQUBE_VERSION}.zip
-ENV JAVA_HOME='/opt/java/openjdk' \
+ENV DOCKER_RUNNING="true" \
+    JAVA_HOME='/opt/java/openjdk' \
     SONARQUBE_HOME=/opt/sonarqube \
     SONAR_VERSION="${SONARQUBE_VERSION}" \
     SQ_DATA_DIR="/opt/sonarqube/data" \
