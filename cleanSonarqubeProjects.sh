@@ -50,3 +50,10 @@ done
   fi
 
 
+check_lines=$(curl -s -XPOST -u "${SONAR_AUTH_TOKEN}:" https://sonarqube.eea.europa.eu/api/v2/entitlements/license)
+
+number=$(echo -e $check_lines | jq -r '.loc')
+max_number=$(echo -e $check_lines | jq -r '.maxLoc')
+
+echo "Number of lines is $number out of $max_number"
+
